@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GHL Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
+    header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    .filters { display: flex; gap: 8px; }
+    .filters button { padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; background: #f1f5f9; color: #475569; transition: all 0.15s; }
+    .filters button.active { background: #6366f1; color: #fff; }
+    main { max-width: 1200px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+    .kpi-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+    .kpi-value { font-size: 32px; font-weight: 700; color: #1e293b; margin-top: 6px; }
+    .kpi-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+    .card h2 { font-size: 15px; font-weight: 600; color: #475569; margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 260px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+    td { padding: 12px 0; border-bottom: 1px solid #f8fafc; color: #475569; }
+    td:first-child { font-weight: 500; color: #1e293b; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .badge-open { background: #dcfce7; color: #16a34a; }
+    .badge-closed { background: #f1f5f9; color: #64748b; }
+    .badge-unread { background: #fef9c3; color: #ca8a04; }
+    .pending { color: #cbd5e1; font-style: italic; }
+    .evaluated { color: #6366f1; }
+    #loading { text-align: center; padding: 60px; color: #94a3b8; font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>GHL Conversations</h1>
+  <div class="filters">
+    <button onclick="setDays(7)">7d</button>
+    <button onclick="setDays(30)" class="active">30d</button>
+    <button onclick="setDays(90)">90d</button>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Carregando dados...</div>
+  <div id="content" style="display:none; flex-direction:column; gap:24px;">
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-title" id="kpi1-title">Mensagens recebidas (30d)</div>
+        <div class="kpi-value" id="kpi1-value">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-title">1ª Resposta média</div>
+        <div class="kpi-value" id="kpi2-value">—</div>
+        <div class="kpi-sub">último dia com dados</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-title">Conversas avaliadas</div>
+        <div class="kpi-value" id="kpi3-value">—</div>
+        <div class="kpi-sub" id="kpi3-sub"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Mensagens recebidas por dia</h2>
+      <div class="chart-wrap"><canvas id="msgChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Tempo médio de primeira resposta (min)</h2>
+      <div class="chart-wrap"><canvas id="frtChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="margin:0">Avaliação de conversas</h2>
+        <span id="eval-count" style="font-size:12px;color:#94a3b8"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Contato</th>
+            <th>Canal</th>
+            <th>Status</th>
+            <th>1ª Resposta</th>
+            <th>Msgs</th>
+            <th>Avaliação IA</th>
+            <th>Última msg</th>
+          </tr>
+        </thead>
+        <tbody id="eval-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://oqoocdeqezrgdauasqtr.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xb29jZGVxZXpyZ2RhdWFzcXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MzMzMzQsImV4cCI6MjA5MDQwOTMzNH0.JoALsyTZlMALeMqHZ_NG88_ZN-58O3TR7OokQ_k7G7E'
+
+  let days = 30
+  let msgChartInstance = null
+  let frtChartInstance = null
+
+  function sb(path) {
+    return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      }
+    }).then(r => r.json())
+  }
+
+  function formatDuration(s) {
+    if (!s) return '—'
+    if (s < 60) return s + 's'
+    if (s < 3600) return Math.round(s / 60) + 'min'
+    const h = Math.floor(s / 3600)
+    const m = Math.round((s % 3600) / 60)
+    return m > 0 ? `${h}h ${m}min` : `${h}h`
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  }
+
+  function formatDateTime(iso) {
+    return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  }
+
+  function setDays(d) {
+    days = d
+    document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'))
+    event.target.classList.add('active')
+    loadData()
+  }
+
+  async function loadData() {
+    document.getElementById('loading').style.display = 'block'
+    document.getElementById('content').style.display = 'none'
+
+    const since = new Date(Date.now() - days * 86400000).toISOString()
+
+    const [msgs, frt, evals] = await Promise.all([
+      sb(`v_messages_per_day?day=gte.${since}&order=day.asc`),
+      sb(`v_first_response_stats?day=gte.${since}&order=day.asc`),
+      sb(`v_evaluations?order=last_message_at.desc&limit=100`),
+    ])
+
+    // KPI 1
+    const totalInbound = msgs.reduce((s, d) => s + (d.inbound_count || 0), 0)
+    document.getElementById('kpi1-title').textContent = `Mensagens recebidas (${days}d)`
+    document.getElementById('kpi1-value').textContent = totalInbound.toLocaleString('pt-BR')
+
+    // KPI 2
+    const latestFrt = frt.at(-1)
+    document.getElementById('kpi2-value').textContent = latestFrt ? formatDuration(latestFrt.avg_response_seconds) : '—'
+
+    // KPI 3
+    const evaluatedCount = evals.filter(e => e.ai_evaluation).length
+    document.getElementById('kpi3-value').textContent = evaluatedCount
+    document.getElementById('kpi3-sub').textContent = `de ${evals.length} total`
+    document.getElementById('eval-count').textContent = `${evaluatedCount} avaliadas de ${evals.length}`
+
+    // Chart 1: Messages per day
+    if (msgChartInstance) msgChartInstance.destroy()
+    msgChartInstance = new Chart(document.getElementById('msgChart'), {
+      type: 'bar',
+      data: {
+        labels: msgs.map(d => formatDate(d.day)),
+        datasets: [
+          { label: 'Recebidas', data: msgs.map(d => d.inbound_count), backgroundColor: '#6366f1', borderRadius: 2 },
+          { label: 'Enviadas', data: msgs.map(d => d.outbound_count), backgroundColor: '#a5b4fc', borderRadius: 2 },
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+    })
+
+    // Chart 2: First response time
+    if (frtChartInstance) frtChartInstance.destroy()
+    frtChartInstance = new Chart(document.getElementById('frtChart'), {
+      type: 'line',
+      data: {
+        labels: frt.map(d => formatDate(d.day)),
+        datasets: [
+          { label: 'Média', data: frt.map(d => +(d.avg_response_seconds / 60).toFixed(1)), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.3, fill: true, pointRadius: 3 },
+          { label: 'P50', data: frt.map(d => +(d.p50_response_seconds / 60).toFixed(1)), borderColor: '#a5b4fc', borderDash: [4,2], tension: 0.3, pointRadius: 2 },
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    })
+
+    // Table
+    const tbody = document.getElementById('eval-tbody')
+    tbody.innerHTML = evals.map(r => `
+      <tr>
+        <td>${r.contact_name || r.contact_phone || '—'}</td>
+        <td>${r.channel || '—'}</td>
+        <td><span class="badge badge-${r.status || 'closed'}">${r.status || '—'}</span></td>
+        <td>${formatDuration(r.first_response_seconds)}</td>
+        <td>${r.message_count || 0}</td>
+        <td>${r.ai_evaluation ? `<span class="evaluated">${r.ai_evaluation}</span>` : '<span class="pending">pendente</span>'}</td>
+        <td>${r.last_message_at ? formatDateTime(r.last_message_at) : '—'}</td>
+      </tr>
+    `).join('')
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('content').style.display = 'flex'
+  }
+
+  loadData()
+</script>
+</body>
+</html>

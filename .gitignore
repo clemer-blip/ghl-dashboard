@@ -1,0 +1,21 @@
+# Env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+.vercel/
+
+# Exports / relatórios locais
+ingestion/*.xlsx
+
+# OS
+.DS_Store
