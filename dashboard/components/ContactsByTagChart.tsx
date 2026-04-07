@@ -20,15 +20,14 @@ export default function ContactsByTagChart({ data }: { data: ContactsByTagRow[] 
     )
   }
 
-  // Top 20 já vem limitado pela API, mas garantimos ordem decrescente
-  const sorted = [...data].sort((a, b) => b.contact_count - a.contact_count)
+  const sorted = [...data].sort((a, b) => b.contact_count - a.contact_count).slice(0, 10)
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 className="text-base font-semibold text-gray-700 mb-4">
-        Contatos por tag <span className="text-xs font-normal text-gray-400">(top 20)</span>
+        Contatos por tag <span className="text-xs font-normal text-gray-400">(top 10)</span>
       </h2>
-      <ResponsiveContainer width="100%" height={Math.max(240, sorted.length * 28)}>
+      <ResponsiveContainer width="100%" height={Math.max(240, sorted.length * 36)}>
         <BarChart
           data={sorted}
           layout="vertical"
