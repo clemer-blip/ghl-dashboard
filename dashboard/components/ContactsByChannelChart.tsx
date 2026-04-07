@@ -15,6 +15,7 @@ const CHANNEL_COLORS: Record<string, string> = {
   SMS: '#6366f1',
   EMAIL: '#f59e0b',
   WHATSAPP: '#22c55e',
+  TYPE_PHONE: '#22c55e',
   INSTAGRAM: '#ec4899',
   FACEBOOK: '#3b82f6',
   WEBCHAT: '#14b8a6',
@@ -24,11 +25,12 @@ const CHANNEL_COLORS: Record<string, string> = {
 
 const DEFAULT_COLOR = '#94a3b8'
 
-function channelLabel(channel: string) {
+export function channelLabel(channel: string) {
   const labels: Record<string, string> = {
     SMS: 'SMS',
     EMAIL: 'E-mail',
     WHATSAPP: 'WhatsApp',
+    TYPE_PHONE: 'WhatsApp',
     INSTAGRAM: 'Instagram',
     FACEBOOK: 'Facebook',
     WEBCHAT: 'Web Chat',

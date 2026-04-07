@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import KpiCard from '@/components/KpiCard'
 import MessagesPerDayChart from '@/components/MessagesPerDayChart'
 import FirstResponseTimeCard from '@/components/FirstResponseTimeCard'
-import NewContactsPerDayChart from '@/components/NewContactsPerDayChart'
 import ContactsByChannelChart from '@/components/ContactsByChannelChart'
 import ContactsByTagChart from '@/components/ContactsByTagChart'
 import ContactsByDDDChart from '@/components/ContactsByDDDChart'
@@ -13,7 +12,6 @@ import LatestConversationsList from '@/components/LatestConversationsList'
 import type {
   MessagesPerDayRow,
   FirstResponseStatsRow,
-  NewContactsPerDayRow,
   ContactsByChannelRow,
   ContactsByTagRow,
   LocationRow,
@@ -82,7 +80,7 @@ export default function DashboardClient() {
 
   // KPIs
   const totalInbound = msgData.reduce((s, d) => s + (d.inbound_count ?? 0), 0)
-  const totalNewContacts = newContactsData.reduce((s, d) => s + (d.new_contacts ?? 0), 0)
+  const totalUniqueContacts = uniqueContactsData.reduce((s, d) => s + (d.unique_contacts ?? 0), 0)
   const latestFrt = frtData.at(-1)
   const totalContacts = channelData.reduce((s, d) => s + (d.contact_count ?? 0), 0)
 
@@ -168,8 +166,8 @@ export default function DashboardClient() {
                 color="indigo"
               />
               <KpiCard
-                title="Novos contatos"
-                value={totalNewContacts.toLocaleString('pt-BR')}
+                title="Clientes únicos"
+                value={totalUniqueContacts.toLocaleString('pt-BR')}
                 subtitle={`últimos ${days} dias`}
                 color="emerald"
               />
@@ -189,20 +187,19 @@ export default function DashboardClient() {
 
             {/* Gráficos de evolução */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <NewContactsPerDayChart data={newContactsData} />
+              <UniqueContactsPerDayChart data={uniqueContactsData} />
               <MessagesPerDayChart data={msgData} />
             </div>
 
-            {/* Canal e tags */}
+            {/* Canal e DDD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ContactsByChannelChart data={channelData} />
-              <ContactsByTagChart data={tagData} />
+              <ContactsByDDDChart data={dddData} />
             </div>
 
-            {/* Clientes únicos por dia + DDD */}
+            {/* Tags */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <UniqueContactsPerDayChart data={uniqueContactsData} />
-              <ContactsByDDDChart data={dddData} />
+              <ContactsByTagChart data={tagData} />
             </div>
 
             {/* Tempo de resposta humana */}
