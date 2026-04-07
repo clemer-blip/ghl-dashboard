@@ -35,7 +35,6 @@ export default function DashboardClient() {
   const [days, setDays] = useState(30)
 
   const [msgData, setMsgData] = useState<MessagesPerDayRow[]>([])
-  const [newContactsData, setNewContactsData] = useState<NewContactsPerDayRow[]>([])
   const [frtData, setFrtData] = useState<FirstResponseStatsRow[]>([])
   const [channelData, setChannelData] = useState<ContactsByChannelRow[]>([])
   const [tagData, setTagData] = useState<ContactsByTagRow[]>([])
@@ -58,16 +57,14 @@ export default function DashboardClient() {
 
     Promise.all([
       fetch(`/api/messages-per-day?days=${days}${loc}`).then((r) => r.json()),
-      fetch(`/api/new-contacts-per-day?days=${days}${loc}`).then((r) => r.json()),
       fetch(`/api/human-response-time?days=${days}${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-channel?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/contacts-by-tag?limit=20${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-ddd?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/unique-contacts-per-day?days=${days}${loc}`).then((r) => r.json()),
       fetch(`/api/latest-conversations?limit=20${loc}`).then((r) => r.json()),
-    ]).then(([msgs, newContacts, frt, channels, tags, ddd, uniqueContacts, latest]) => {
+    ]).then(([msgs, frt, channels, tags, ddd, uniqueContacts, latest]) => {
       setMsgData(Array.isArray(msgs) ? msgs : [])
-      setNewContactsData(Array.isArray(newContacts) ? newContacts : [])
       setFrtData(Array.isArray(frt) ? frt : [])
       setChannelData(Array.isArray(channels) ? channels : [])
       setTagData(Array.isArray(tags) ? tags : [])
