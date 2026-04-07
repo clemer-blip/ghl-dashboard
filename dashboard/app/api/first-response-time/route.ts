@@ -10,10 +10,8 @@ export async function GET(req: Request) {
   const since = new Date(Date.now() - days * 86_400_000).toISOString()
 
   let query = supabase
-    .from('v_first_response_stats')
-    .select(
-      'day, avg_response_seconds, p50_response_seconds, p95_response_seconds, total_conversations'
-    )
+    .from('v_response_time_per_day')
+    .select('day, avg_response_seconds, p50_response_seconds, p95_response_seconds, total_conversations')
     .gte('day', since)
     .order('day', { ascending: true })
 
