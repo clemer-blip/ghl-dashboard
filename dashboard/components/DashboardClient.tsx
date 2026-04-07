@@ -73,7 +73,10 @@ export default function DashboardClient() {
   // KPIs
   const totalInbound = msgData.reduce((s, d) => s + (d.inbound_count ?? 0), 0)
   const totalUniqueContacts = uniqueContactsData.reduce((s, d) => s + (d.unique_contacts ?? 0), 0)
-  const latestFrt = frtData.at(-1)
+  const last7Frt = frtData.slice(-7).filter((d) => d.avg_response_seconds)
+  const avgFrt7d = last7Frt.length
+    ? Math.round(last7Frt.reduce((s, d) => s + d.avg_response_seconds, 0) / last7Frt.length)
+    : null
   const totalContacts = channelData.reduce((s, d) => s + (d.contact_count ?? 0), 0)
 
   return (
@@ -165,8 +168,8 @@ export default function DashboardClient() {
               />
               <KpiCard
                 title="1ª resposta humana"
-                value={latestFrt ? formatDuration(latestFrt.avg_response_seconds) : '—'}
-                subtitle="média do último dia"
+                value={avgFrt7d ? formatDuration(avgFrt7d) : '—'}
+                subtitle="média dos últimos 7 dias"
                 color="amber"
               />
               <KpiCard
