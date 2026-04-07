@@ -66,3 +66,26 @@ export type LocationRow = {
   total_conversations: number
   last_activity: string
 }
+
+export type ContactsByDDDRow = {
+  ddd: string
+  contact_count: number
+  location_id: string
+}
+
+export type UniqueContactsPerDayRow = {
+  day: string
+  unique_contacts: number
+  location_id: string
+}
+
+export type LatestConversationRow = {
+  id: string
+  contact_name: string | null
+  contact_phone: string | null
+  channel: string | null
+  status: string | null
+  last_message_at: string | null
+  last_message_body: string | null
+  first_response_seconds: number | null
+}

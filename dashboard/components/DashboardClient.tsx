@@ -7,6 +7,9 @@ import FirstResponseTimeCard from '@/components/FirstResponseTimeCard'
 import NewContactsPerDayChart from '@/components/NewContactsPerDayChart'
 import ContactsByChannelChart from '@/components/ContactsByChannelChart'
 import ContactsByTagChart from '@/components/ContactsByTagChart'
+import ContactsByDDDChart from '@/components/ContactsByDDDChart'
+import UniqueContactsPerDayChart from '@/components/UniqueContactsPerDayChart'
+import LatestConversationsList from '@/components/LatestConversationsList'
 import type {
   MessagesPerDayRow,
   FirstResponseStatsRow,
@@ -14,6 +17,9 @@ import type {
   ContactsByChannelRow,
   ContactsByTagRow,
   LocationRow,
+  ContactsByDDDRow,
+  UniqueContactsPerDayRow,
+  LatestConversationRow,
 } from '@/lib/supabase'
 import { formatDuration } from '@/lib/formatters'
 
@@ -35,6 +41,9 @@ export default function DashboardClient() {
   const [frtData, setFrtData] = useState<FirstResponseStatsRow[]>([])
   const [channelData, setChannelData] = useState<ContactsByChannelRow[]>([])
   const [tagData, setTagData] = useState<ContactsByTagRow[]>([])
+  const [dddData, setDddData] = useState<ContactsByDDDRow[]>([])
+  const [uniqueContactsData, setUniqueContactsData] = useState<UniqueContactsPerDayRow[]>([])
+  const [latestConvs, setLatestConvs] = useState<LatestConversationRow[]>([])
   const [loading, setLoading] = useState(true)
 
   // Carrega a lista de subcontas uma vez
@@ -55,12 +64,18 @@ export default function DashboardClient() {
       fetch(`/api/human-response-time?days=${days}${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-channel?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/contacts-by-tag?limit=20${loc}`).then((r) => r.json()),
-    ]).then(([msgs, newContacts, frt, channels, tags]) => {
+      fetch(`/api/contacts-by-ddd?${loc.slice(1)}`).then((r) => r.json()),
+      fetch(`/api/unique-contacts-per-day?days=${days}${loc}`).then((r) => r.json()),
+      fetch(`/api/latest-conversations?limit=20${loc}`).then((r) => r.json()),
+    ]).then(([msgs, newContacts, frt, channels, tags, ddd, uniqueContacts, latest]) => {
       setMsgData(Array.isArray(msgs) ? msgs : [])
       setNewContactsData(Array.isArray(newContacts) ? newContacts : [])
       setFrtData(Array.isArray(frt) ? frt : [])
       setChannelData(Array.isArray(channels) ? channels : [])
       setTagData(Array.isArray(tags) ? tags : [])
+      setDddData(Array.isArray(ddd) ? ddd : [])
+      setUniqueContactsData(Array.isArray(uniqueContacts) ? uniqueContacts : [])
+      setLatestConvs(Array.isArray(latest) ? latest : [])
       setLoading(false)
     })
   }, [selectedLocation, days])
@@ -184,8 +199,17 @@ export default function DashboardClient() {
               <ContactsByTagChart data={tagData} />
             </div>
 
+            {/* Clientes únicos por dia + DDD */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <UniqueContactsPerDayChart data={uniqueContactsData} />
+              <ContactsByDDDChart data={dddData} />
+            </div>
+
             {/* Tempo de resposta humana */}
             <FirstResponseTimeCard data={frtData} title="Tempo de primeira resposta humana" />
+
+            {/* Últimas conversas */}
+            <LatestConversationsList data={latestConvs} />
           </>
         )}
       </main>
