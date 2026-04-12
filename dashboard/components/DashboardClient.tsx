@@ -3,17 +3,17 @@
 import { useEffect, useState } from 'react'
 import KpiCard from '@/components/KpiCard'
 import MessagesPerDayChart from '@/components/MessagesPerDayChart'
-import ContactsByTagChart from '@/components/ContactsByTagChart'
 import ContactsByDDDChart from '@/components/ContactsByDDDChart'
 import UniqueContactsPerDayChart from '@/components/UniqueContactsPerDayChart'
 import ResponseTimeCard from '@/components/FirstResponseTimeCard'
+import MetaAdsSection from '@/components/MetaAdsSection'
 import type {
   MessagesPerDayRow,
   FirstResponseStatsRow,
-  ContactsByTagRow,
   LocationRow,
   ContactsByDDDRow,
   UniqueContactsPerDayRow,
+  MetaInsightRow,
 } from '@/lib/supabase'
 import { formatDuration } from '@/lib/formatters'
 
@@ -40,9 +40,9 @@ export default function DashboardClient() {
 
   const [msgData, setMsgData] = useState<MessagesPerDayRow[]>([])
   const [frtData, setFrtData] = useState<FirstResponseStatsRow[]>([])
-  const [tagData, setTagData] = useState<ContactsByTagRow[]>([])
   const [dddData, setDddData] = useState<ContactsByDDDRow[]>([])
   const [uniqueContactsData, setUniqueContactsData] = useState<UniqueContactsPerDayRow[]>([])
+  const [metaData, setMetaData] = useState<MetaInsightRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -61,15 +61,15 @@ export default function DashboardClient() {
     Promise.all([
       fetch(`/api/messages-per-day?${dateParams}${loc}`).then((r) => r.json()),
       fetch(`/api/first-response-time?${dateParams}${loc}`).then((r) => r.json()),
-      fetch(`/api/contacts-by-tag?limit=10${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-ddd?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/unique-contacts-per-day?${dateParams}${loc}`).then((r) => r.json()),
-    ]).then(([msgs, frt, tags, ddd, uniqueContacts]) => {
+      fetch(`/api/meta-insights?${dateParams}${loc}`).then((r) => r.json()),
+    ]).then(([msgs, frt, ddd, uniqueContacts, meta]) => {
       setMsgData(Array.isArray(msgs) ? msgs : [])
       setFrtData(Array.isArray(frt) ? frt : [])
-      setTagData(Array.isArray(tags) ? tags : [])
       setDddData(Array.isArray(ddd) ? ddd : [])
       setUniqueContactsData(Array.isArray(uniqueContacts) ? uniqueContacts : [])
+      setMetaData(Array.isArray(meta) ? meta : [])
       setLoading(false)
     })
   }, [selectedLocation, days, customStart, customEnd])
@@ -298,14 +298,14 @@ export default function DashboardClient() {
               <MessagesPerDayChart data={msgData} />
             </div>
 
+            {/* Meta Ads */}
+            <MetaAdsSection data={metaData} locationLabels={LOCATION_LABELS} />
+
             {/* Tempo de resposta + DDD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ResponseTimeCard data={frtData} title="Tempo médio de atendimento" />
               <ContactsByDDDChart data={dddData} />
             </div>
-
-            {/* Tags */}
-            <ContactsByTagChart data={tagData} />
           </>
         )}
       </main>

@@ -80,6 +80,16 @@ export type UniqueContactsPerDayRow = {
   location_id: string
 }
 
+export type MetaInsightRow = {
+  date: string
+  location_id: string
+  spend: number
+  impressions: number
+  reach: number
+  clicks: number
+  conversations_started: number
+}
+
 export type LatestConversationRow = {
   id: string
   contact_name: string | null
