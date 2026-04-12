@@ -7,26 +7,36 @@ export async function GET(req: Request) {
 
   const supabase = createServerSupabaseClient()
 
-  let query = supabase
-    .from('v_contacts_by_channel')
-    .select('channel, contact_count, conversation_count, location_id')
-    .order('contact_count', { ascending: false })
-
-  if (locationId) query = query.eq('location_id', locationId)
-
-  const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
+  // Sem filtro: usa a view que já agrega tudo
   if (!locationId) {
-    const byChannel: Record<string, { channel: string; contact_count: number; conversation_count: number }> = {}
-    for (const row of data ?? []) {
-      const key = row.channel ?? 'Desconhecido'
-      if (!byChannel[key]) byChannel[key] = { channel: key, contact_count: 0, conversation_count: 0 }
-      byChannel[key].contact_count      += row.contact_count      ?? 0
-      byChannel[key].conversation_count += row.conversation_count ?? 0
-    }
-    return NextResponse.json(Object.values(byChannel).sort((a, b) => b.contact_count - a.contact_count))
+    const { data, error } = await supabase
+      .from('v_contacts_by_channel')
+      .select('channel, contact_count, conversation_count')
+      .order('contact_count', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
   }
 
-  return NextResponse.json(data)
+  // Com filtro: agrega direto das conversations
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('channel, contact_id')
+    .eq('location_id', locationId)
+    .not('channel', 'is', null)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const byChannel: Record<string, { channel: string; contact_count: number; conversation_count: number }> = {}
+  const contactSets: Record<string, Set<string>> = {}
+  for (const row of data ?? []) {
+    const key = row.channel
+    if (!byChannel[key]) { byChannel[key] = { channel: key, contact_count: 0, conversation_count: 0 }; contactSets[key] = new Set() }
+    if (row.contact_id) contactSets[key].add(row.contact_id)
+    byChannel[key].conversation_count += 1
+  }
+  for (const key of Object.keys(byChannel)) {
+    byChannel[key].contact_count = contactSets[key].size
+  }
+
+  return NextResponse.json(Object.values(byChannel).sort((a, b) => b.contact_count - a.contact_count))
 }
