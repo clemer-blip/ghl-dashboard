@@ -88,6 +88,7 @@ class SupabaseWriter:
                 "body": m.get("body"),
                 "sent_at": _ms_to_iso(m.get("dateAdded")),
                 "user_id": m.get("userId"),
+                "source": m.get("source"),  # 'workflow' = bot, None = humano
                 "raw": m,
             }
             for m in messages

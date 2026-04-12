@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const supabase = createServerSupabaseClient()
 
   let query = supabase
-    .from('v_response_time_per_day')
+    .from('v_human_response_time_per_day')
     .select('day, avg_response_seconds, p50_response_seconds, p95_response_seconds, total_conversations, location_id')
     .gte('day', since)
     .order('day', { ascending: true })
