@@ -80,7 +80,10 @@ export default function DashboardClient() {
   const totalUniqueContacts = uniqueContactsData.reduce((s, d) => s + (d.unique_contacts ?? 0), 0)
   const uniqueDays = new Set(uniqueContactsData.map((d) => d.day)).size
   const avgContactsPerDay = uniqueDays ? Math.round(totalUniqueContacts / uniqueDays) : 0
-  const yesterdayFrt = frtData.at(-2) ?? frtData.at(-1)
+  const frtTotal = frtData.reduce((s, d) => s + (d.total_conversations ?? 0), 0)
+  const frtMedianSeconds = frtTotal > 0
+    ? Math.round(frtData.reduce((s, d) => s + (d.p50_response_seconds ?? 0) * (d.total_conversations ?? 0), 0) / frtTotal)
+    : null
 
   const periodLabel = customStart && customEnd
     ? `${customStart.slice(5).replace('-', '/')} a ${customEnd.slice(5).replace('-', '/')}`
@@ -93,14 +96,17 @@ export default function DashboardClient() {
         const locId = loc.location_id
         const uRows = uniqueContactsData.filter((d) => d.location_id === locId)
         const mRows = msgData.filter((d) => d.location_id === locId)
-        const fRows = frtData.filter((d: any) => d.location_id === locId)
-        const uDays = new Set(uRows.map((d) => d.day)).size || 1
-        const mDays = new Set(mRows.map((d) => d.day)).size || 1
+        const fRows  = frtData.filter((d) => d.location_id === locId)
+        const uDays  = new Set(uRows.map((d) => d.day)).size || 1
+        const mDays  = new Set(mRows.map((d) => d.day)).size || 1
         const avgClients  = Math.round(uRows.reduce((s, d) => s + d.unique_contacts, 0) / uDays)
         const avgInbound  = Math.round(mRows.reduce((s, d) => s + (d.inbound_count ?? 0), 0) / mDays)
         const avgOutbound = Math.round(mRows.reduce((s, d) => s + (d.outbound_count ?? 0), 0) / mDays)
-        const latestFrt   = fRows.at(-2) ?? fRows.at(-1)
-        return { locId, avgClients, avgInbound, avgOutbound, latestFrt }
+        const fTotal = fRows.reduce((s, d) => s + (d.total_conversations ?? 0), 0)
+        const fMedian = fTotal > 0
+          ? Math.round(fRows.reduce((s, d) => s + (d.p50_response_seconds ?? 0) * (d.total_conversations ?? 0), 0) / fTotal)
+          : null
+        return { locId, avgClients, avgInbound, avgOutbound, fMedian }
       })
     : []
 
@@ -231,9 +237,9 @@ export default function DashboardClient() {
                 color="emerald"
               />
               <KpiCard
-                title="Tempo médio de resposta"
-                value={yesterdayFrt ? formatDuration(yesterdayFrt.avg_response_seconds) : '—'}
-                subtitle="média do último dia com dados"
+                title="Tempo de resposta"
+                value={frtMedianSeconds ? formatDuration(frtMedianSeconds) : '—'}
+                subtitle={`mediana — ${periodLabel}`}
                 color="amber"
               />
             </div>
@@ -250,12 +256,12 @@ export default function DashboardClient() {
                         <th className="text-right pb-3 font-medium">Clientes/dia</th>
                         <th className="text-right pb-3 font-medium">Recebidas/dia</th>
                         <th className="text-right pb-3 font-medium">Enviadas/dia</th>
-                        <th className="text-right pb-3 font-medium">Tempo médio resp.</th>
+                        <th className="text-right pb-3 font-medium">Mediana resp.</th>
                         <th className="text-right pb-3 font-medium">% do volume</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {locationStats.map(({ locId, avgClients, avgInbound, avgOutbound, latestFrt }) => {
+                      {locationStats.map(({ locId, avgClients, avgInbound, avgOutbound, fMedian }) => {
                         const totalClients = locationStats.reduce((s, l) => s + l.avgClients, 0)
                         const pct = totalClients ? Math.round((avgClients / totalClients) * 100) : 0
                         return (
@@ -273,7 +279,7 @@ export default function DashboardClient() {
                               {avgOutbound.toLocaleString('pt-BR')}
                             </td>
                             <td className="py-3 text-right text-gray-700">
-                              {latestFrt ? formatDuration(latestFrt.avg_response_seconds) : '—'}
+                              {fMedian ? formatDuration(fMedian) : '—'}
                             </td>
                             <td className="py-3 text-right">
                               <div className="flex items-center justify-end gap-2">
