@@ -28,6 +28,7 @@ export type FirstResponseStatsRow = {
   avg_response_seconds: number
   p50_response_seconds: number
   p95_response_seconds: number
+  location_id?: string | null
 }
 
 export type EvaluationRow = {

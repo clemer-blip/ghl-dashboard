@@ -303,7 +303,7 @@ export default function DashboardClient() {
 
             {/* Tempo de resposta + DDD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ResponseTimeCard data={frtData} title="Tempo médio de atendimento" />
+              <ResponseTimeCard data={frtData} title="Tempo de resposta" locationLabels={LOCATION_LABELS} />
               <ContactsByDDDChart data={dddData} />
             </div>
           </>
