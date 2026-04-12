@@ -5,12 +5,13 @@ on:
     # Roda de hora em hora das 09:00 às 18:00 BRT (= 12:00 às 21:00 UTC)
     # Segunda a sexta
     - cron: '0 12-21 * * 1-5'
-    # Sábado (caso precise — remova a linha abaixo se não quiser)
+    # Sábado
     - cron: '0 12-21 * * 6'
   workflow_dispatch: # permite rodar manualmente pelo GitHub
 
 jobs:
-  sync:
+  sync-goiania:
+    name: Sync — Goiânia
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,8 +33,37 @@ jobs:
 
       - name: Rodar sync GHL → Supabase
         env:
-          GHL_API_KEY:              ${{ secrets.GHL_API_KEY }}
-          GHL_LOCATION_ID:          ${{ secrets.GHL_LOCATION_ID }}
-          SUPABASE_URL:             ${{ secrets.SUPABASE_URL }}
+          GHL_API_KEY:               ${{ secrets.GHL_API_KEY_GOIANIA }}
+          GHL_LOCATION_ID:           ${{ secrets.GHL_LOCATION_ID_GOIANIA }}
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 main.py
+
+  sync-sp:
+    name: Sync — São Paulo
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: ingestion/requirements.txt
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar sync GHL → Supabase
+        env:
+          GHL_API_KEY:               ${{ secrets.GHL_API_KEY_SP }}
+          GHL_LOCATION_ID:           ${{ secrets.GHL_LOCATION_ID_SP }}
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python3 main.py
