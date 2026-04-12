@@ -228,7 +228,7 @@ export default function DashboardClient() {
                 title="Mensagens enviadas"
                 value={totalOutbound.toLocaleString('pt-BR')}
                 subtitle={periodLabel}
-                color="sky"
+                color="emerald"
               />
               <KpiCard
                 title="Tempo médio de resposta"
