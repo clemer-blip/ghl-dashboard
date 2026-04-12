@@ -19,6 +19,7 @@ export type MessagesPerDayRow = {
   total_messages: number
   inbound_count: number
   outbound_count: number
+  location_id?: string
 }
 
 export type FirstResponseStatsRow = {

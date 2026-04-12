@@ -24,15 +24,5 @@ export async function GET(req: Request) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  if (!locationId) {
-    const byDay: Record<string, { day: string; unique_contacts: number }> = {}
-    for (const row of data ?? []) {
-      if (!byDay[row.day]) byDay[row.day] = { day: row.day, unique_contacts: 0 }
-      byDay[row.day].unique_contacts += row.unique_contacts ?? 0
-    }
-    return NextResponse.json(Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day)))
-  }
-
   return NextResponse.json(data)
 }

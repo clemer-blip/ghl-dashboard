@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import KpiCard from '@/components/KpiCard'
 import MessagesPerDayChart from '@/components/MessagesPerDayChart'
-import ContactsByChannelChart from '@/components/ContactsByChannelChart'
 import ContactsByTagChart from '@/components/ContactsByTagChart'
 import ContactsByDDDChart from '@/components/ContactsByDDDChart'
 import UniqueContactsPerDayChart from '@/components/UniqueContactsPerDayChart'
@@ -11,7 +10,6 @@ import ResponseTimeCard from '@/components/FirstResponseTimeCard'
 import type {
   MessagesPerDayRow,
   FirstResponseStatsRow,
-  ContactsByChannelRow,
   ContactsByTagRow,
   LocationRow,
   ContactsByDDDRow,
@@ -22,6 +20,10 @@ import { formatDuration } from '@/lib/formatters'
 const LOCATION_LABELS: Record<string, string> = {
   'NpYMLlXhYhsazq0i03ZV': 'São Paulo',
   'uFiluYqG2MhvdLi1qRNj': 'Goiânia',
+}
+const LOC_COLORS: Record<string, string> = {
+  'NpYMLlXhYhsazq0i03ZV': '#6366f1',
+  'uFiluYqG2MhvdLi1qRNj': '#10b981',
 }
 
 function locationLabel(id: string) {
@@ -38,25 +40,20 @@ export default function DashboardClient() {
 
   const [msgData, setMsgData] = useState<MessagesPerDayRow[]>([])
   const [frtData, setFrtData] = useState<FirstResponseStatsRow[]>([])
-  const [channelData, setChannelData] = useState<ContactsByChannelRow[]>([])
   const [tagData, setTagData] = useState<ContactsByTagRow[]>([])
   const [dddData, setDddData] = useState<ContactsByDDDRow[]>([])
   const [uniqueContactsData, setUniqueContactsData] = useState<UniqueContactsPerDayRow[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Carrega a lista de subcontas uma vez
   useEffect(() => {
     fetch('/api/locations')
       .then((r) => r.json())
       .then((data) => setLocations(Array.isArray(data) ? data : []))
   }, [])
 
-  // Carrega os dados quando muda subconta ou período
   useEffect(() => {
     setLoading(true)
     const loc = selectedLocation === 'all' ? '' : `&location=${selectedLocation}`
-
-    // Parâmetros de data: custom range ou days preset
     const dateParams = customStart && customEnd
       ? `start=${customStart}&end=${customEnd}`
       : `days=${days ?? 30}`
@@ -64,14 +61,12 @@ export default function DashboardClient() {
     Promise.all([
       fetch(`/api/messages-per-day?${dateParams}${loc}`).then((r) => r.json()),
       fetch(`/api/first-response-time?${dateParams}${loc}`).then((r) => r.json()),
-      fetch(`/api/contacts-by-channel?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/contacts-by-tag?limit=10${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-ddd?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/unique-contacts-per-day?${dateParams}${loc}`).then((r) => r.json()),
-    ]).then(([msgs, frt, channels, tags, ddd, uniqueContacts]) => {
+    ]).then(([msgs, frt, tags, ddd, uniqueContacts]) => {
       setMsgData(Array.isArray(msgs) ? msgs : [])
       setFrtData(Array.isArray(frt) ? frt : [])
-      setChannelData(Array.isArray(channels) ? channels : [])
       setTagData(Array.isArray(tags) ? tags : [])
       setDddData(Array.isArray(ddd) ? ddd : [])
       setUniqueContactsData(Array.isArray(uniqueContacts) ? uniqueContacts : [])
@@ -79,15 +74,35 @@ export default function DashboardClient() {
     })
   }, [selectedLocation, days, customStart, customEnd])
 
-  // KPIs
-  const totalInbound = msgData.reduce((s, d) => s + (d.inbound_count ?? 0), 0)
+  // KPIs globais
+  const totalInbound  = msgData.reduce((s, d) => s + (d.inbound_count  ?? 0), 0)
+  const totalOutbound = msgData.reduce((s, d) => s + (d.outbound_count ?? 0), 0)
   const totalUniqueContacts = uniqueContactsData.reduce((s, d) => s + (d.unique_contacts ?? 0), 0)
+  const uniqueDays = new Set(uniqueContactsData.map((d) => d.day)).size
+  const avgContactsPerDay = uniqueDays ? Math.round(totalUniqueContacts / uniqueDays) : 0
   const yesterdayFrt = frtData.at(-2) ?? frtData.at(-1)
-  const totalContacts = channelData.reduce((s, d) => s + (d.contact_count ?? 0), 0)
 
   const periodLabel = customStart && customEnd
     ? `${customStart.slice(5).replace('-', '/')} a ${customEnd.slice(5).replace('-', '/')}`
     : `últimos ${days} dias`
+
+  // Stats por location para painel comparativo
+  const isAllLocations = selectedLocation === 'all' && locations.length > 1
+  const locationStats = isAllLocations
+    ? locations.map((loc) => {
+        const locId = loc.location_id
+        const uRows = uniqueContactsData.filter((d) => d.location_id === locId)
+        const mRows = msgData.filter((d) => d.location_id === locId)
+        const fRows = frtData.filter((d: any) => d.location_id === locId)
+        const uDays = new Set(uRows.map((d) => d.day)).size || 1
+        const mDays = new Set(mRows.map((d) => d.day)).size || 1
+        const avgClients  = Math.round(uRows.reduce((s, d) => s + d.unique_contacts, 0) / uDays)
+        const avgInbound  = Math.round(mRows.reduce((s, d) => s + (d.inbound_count ?? 0), 0) / mDays)
+        const avgOutbound = Math.round(mRows.reduce((s, d) => s + (d.outbound_count ?? 0), 0) / mDays)
+        const latestFrt   = fRows.at(-2) ?? fRows.at(-1)
+        return { locId, avgClients, avgInbound, avgOutbound, latestFrt }
+      })
+    : []
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -101,7 +116,7 @@ export default function DashboardClient() {
                   d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4z" />
               </svg>
             </div>
-            <h1 className="text-lg font-bold text-gray-900">Time de vendas - Casa Renata Goiania</h1>
+            <h1 className="text-lg font-bold text-gray-900">Casa Renata — Atendimento</h1>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -111,9 +126,7 @@ export default function DashboardClient() {
                 <button
                   onClick={() => setSelectedLocation('all')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    selectedLocation === 'all'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                    selectedLocation === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   Todas
@@ -123,9 +136,7 @@ export default function DashboardClient() {
                     key={loc.location_id}
                     onClick={() => setSelectedLocation(loc.location_id)}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      selectedLocation === loc.location_id
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                      selectedLocation === loc.location_id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {locationLabel(loc.location_id)}
@@ -141,9 +152,7 @@ export default function DashboardClient() {
                   key={d}
                   onClick={() => { setDays(d); setCustomStart(''); setCustomEnd(''); setShowDatePicker(false) }}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    days === d && !customStart
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                    days === d && !customStart ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {d}d
@@ -152,9 +161,7 @@ export default function DashboardClient() {
               <button
                 onClick={() => setShowDatePicker((v) => !v)}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  customStart
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  customStart ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {customStart ? periodLabel : 'Personalizado'}
@@ -166,21 +173,13 @@ export default function DashboardClient() {
                   <div className="flex flex-col gap-2">
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">De</label>
-                      <input
-                        type="date"
-                        value={customStart}
-                        onChange={(e) => setCustomStart(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                      <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Até</label>
-                      <input
-                        type="date"
-                        value={customEnd}
-                        onChange={(e) => setCustomEnd(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                      <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                     </div>
                   </div>
                   <button
@@ -214,48 +213,99 @@ export default function DashboardClient() {
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard
+                title="Clientes por dia"
+                value={avgContactsPerDay.toLocaleString('pt-BR')}
+                subtitle={`média — ${periodLabel}`}
+                color="violet"
+              />
+              <KpiCard
                 title="Mensagens recebidas"
                 value={totalInbound.toLocaleString('pt-BR')}
                 subtitle={periodLabel}
                 color="indigo"
               />
               <KpiCard
-                title="Clientes únicos"
-                value={totalUniqueContacts.toLocaleString('pt-BR')}
+                title="Mensagens enviadas"
+                value={totalOutbound.toLocaleString('pt-BR')}
                 subtitle={periodLabel}
-                color="emerald"
+                color="sky"
               />
               <KpiCard
-                title="1ª resposta humana"
+                title="Tempo médio de resposta"
                 value={yesterdayFrt ? formatDuration(yesterdayFrt.avg_response_seconds) : '—'}
-                subtitle="média do dia anterior"
+                subtitle="média do último dia com dados"
                 color="amber"
-              />
-              <KpiCard
-                title="Total de contatos"
-                value={totalContacts.toLocaleString('pt-BR')}
-                subtitle={`em ${channelData.length} canal${channelData.length !== 1 ? 'is' : ''}`}
-                color="violet"
               />
             </div>
 
-            {/* Gráficos de evolução */}
+            {/* Painel comparativo — só quando "Todas" com múltiplas locations */}
+            {isAllLocations && locationStats.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-semibold text-gray-700 mb-4">Comparativo por unidade</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                        <th className="text-left pb-3 font-medium">Unidade</th>
+                        <th className="text-right pb-3 font-medium">Clientes/dia</th>
+                        <th className="text-right pb-3 font-medium">Recebidas/dia</th>
+                        <th className="text-right pb-3 font-medium">Enviadas/dia</th>
+                        <th className="text-right pb-3 font-medium">Tempo médio resp.</th>
+                        <th className="text-right pb-3 font-medium">% do volume</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {locationStats.map(({ locId, avgClients, avgInbound, avgOutbound, latestFrt }) => {
+                        const totalClients = locationStats.reduce((s, l) => s + l.avgClients, 0)
+                        const pct = totalClients ? Math.round((avgClients / totalClients) * 100) : 0
+                        return (
+                          <tr key={locId} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-3 font-semibold" style={{ color: LOC_COLORS[locId] ?? '#6366f1' }}>
+                              {locationLabel(locId)}
+                            </td>
+                            <td className="py-3 text-right text-gray-700 font-medium">
+                              {avgClients.toLocaleString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-right text-gray-700">
+                              {avgInbound.toLocaleString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-right text-gray-700">
+                              {avgOutbound.toLocaleString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-right text-gray-700">
+                              {latestFrt ? formatDuration(latestFrt.avg_response_seconds) : '—'}
+                            </td>
+                            <td className="py-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: LOC_COLORS[locId] ?? '#6366f1' }} />
+                                </div>
+                                <span className="text-gray-500 text-xs w-8 text-right">{pct}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Gráficos de volume */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <UniqueContactsPerDayChart data={uniqueContactsData} />
+              <UniqueContactsPerDayChart data={uniqueContactsData} locationLabels={LOCATION_LABELS} />
               <MessagesPerDayChart data={msgData} />
             </div>
 
-            {/* Canal e DDD */}
+            {/* Tempo de resposta + DDD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ContactsByChannelChart data={channelData} />
+              <ResponseTimeCard data={frtData} title="Tempo médio de atendimento" />
               <ContactsByDDDChart data={dddData} />
             </div>
 
-            {/* Tags — largura total */}
+            {/* Tags */}
             <ContactsByTagChart data={tagData} />
-
-            {/* Tempo de atendimento */}
-            <ResponseTimeCard data={frtData} title="Tempo de atendimento (inbound → resposta do time)" />
           </>
         )}
       </main>
