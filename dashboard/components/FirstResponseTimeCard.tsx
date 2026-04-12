@@ -67,7 +67,7 @@ export default function FirstResponseTimeCard({
             {title ?? 'Tempo de resposta'}
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            mediana por dia · {totalConvs.toLocaleString('pt-BR')} atendimentos humanos
+            mediana por dia · dias úteis · respostas em até 2h · {totalConvs.toLocaleString('pt-BR')} atendimentos
           </p>
         </div>
         <div className="text-right">
