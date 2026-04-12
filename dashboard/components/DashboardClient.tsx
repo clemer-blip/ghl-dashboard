@@ -31,7 +31,10 @@ function locationLabel(id: string) {
 export default function DashboardClient() {
   const [locations, setLocations] = useState<LocationRow[]>([])
   const [selectedLocation, setSelectedLocation] = useState<string>('all')
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState<number | null>(30)
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
   const [msgData, setMsgData] = useState<MessagesPerDayRow[]>([])
   const [frtData, setFrtData] = useState<FirstResponseStatsRow[]>([])
@@ -53,13 +56,18 @@ export default function DashboardClient() {
     setLoading(true)
     const loc = selectedLocation === 'all' ? '' : `&location=${selectedLocation}`
 
+    // Parâmetros de data: custom range ou days preset
+    const dateParams = customStart && customEnd
+      ? `start=${customStart}&end=${customEnd}`
+      : `days=${days ?? 30}`
+
     Promise.all([
-      fetch(`/api/messages-per-day?days=${days}${loc}`).then((r) => r.json()),
-      fetch(`/api/first-response-time?days=${days}${loc}`).then((r) => r.json()),
+      fetch(`/api/messages-per-day?${dateParams}${loc}`).then((r) => r.json()),
+      fetch(`/api/first-response-time?${dateParams}${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-channel?${loc.slice(1)}`).then((r) => r.json()),
       fetch(`/api/contacts-by-tag?limit=10${loc}`).then((r) => r.json()),
       fetch(`/api/contacts-by-ddd?${loc.slice(1)}`).then((r) => r.json()),
-      fetch(`/api/unique-contacts-per-day?days=${days}${loc}`).then((r) => r.json()),
+      fetch(`/api/unique-contacts-per-day?${dateParams}${loc}`).then((r) => r.json()),
     ]).then(([msgs, frt, channels, tags, ddd, uniqueContacts]) => {
       setMsgData(Array.isArray(msgs) ? msgs : [])
       setFrtData(Array.isArray(frt) ? frt : [])
@@ -69,13 +77,17 @@ export default function DashboardClient() {
       setUniqueContactsData(Array.isArray(uniqueContacts) ? uniqueContacts : [])
       setLoading(false)
     })
-  }, [selectedLocation, days])
+  }, [selectedLocation, days, customStart, customEnd])
 
   // KPIs
   const totalInbound = msgData.reduce((s, d) => s + (d.inbound_count ?? 0), 0)
   const totalUniqueContacts = uniqueContactsData.reduce((s, d) => s + (d.unique_contacts ?? 0), 0)
   const yesterdayFrt = frtData.at(-2) ?? frtData.at(-1)
   const totalContacts = channelData.reduce((s, d) => s + (d.contact_count ?? 0), 0)
+
+  const periodLabel = customStart && customEnd
+    ? `${customStart.slice(5).replace('-', '/')} a ${customEnd.slice(5).replace('-', '/')}`
+    : `últimos ${days} dias`
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -123,13 +135,13 @@ export default function DashboardClient() {
             )}
 
             {/* Seletor de período */}
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-              {[7, 30, 90].map((d) => (
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg relative">
+              {[7, 30].map((d) => (
                 <button
                   key={d}
-                  onClick={() => setDays(d)}
+                  onClick={() => { setDays(d); setCustomStart(''); setCustomEnd(''); setShowDatePicker(false) }}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    days === d
+                    days === d && !customStart
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -137,6 +149,55 @@ export default function DashboardClient() {
                   {d}d
                 </button>
               ))}
+              <button
+                onClick={() => setShowDatePicker((v) => !v)}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  customStart
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {customStart ? periodLabel : 'Personalizado'}
+              </button>
+
+              {showDatePicker && (
+                <div className="absolute right-0 top-10 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 flex flex-col gap-3 min-w-[260px]">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Período personalizado</p>
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">De</label>
+                      <input
+                        type="date"
+                        value={customStart}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Até</label>
+                      <input
+                        type="date"
+                        value={customEnd}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { if (customStart && customEnd) { setDays(null); setShowDatePicker(false) } }}
+                    disabled={!customStart || !customEnd}
+                    className="w-full bg-indigo-600 text-white rounded-lg py-1.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                  <button
+                    onClick={() => { setCustomStart(''); setCustomEnd(''); setDays(30); setShowDatePicker(false) }}
+                    className="w-full text-gray-500 text-sm hover:text-gray-700"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -155,13 +216,13 @@ export default function DashboardClient() {
               <KpiCard
                 title="Mensagens recebidas"
                 value={totalInbound.toLocaleString('pt-BR')}
-                subtitle={`últimos ${days} dias`}
+                subtitle={periodLabel}
                 color="indigo"
               />
               <KpiCard
                 title="Clientes únicos"
                 value={totalUniqueContacts.toLocaleString('pt-BR')}
-                subtitle={`últimos ${days} dias`}
+                subtitle={periodLabel}
                 color="emerald"
               />
               <KpiCard

@@ -3,11 +3,15 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const days = parseInt(searchParams.get('days') ?? '30', 10)
   const locationId = searchParams.get('location')
+  const startParam = searchParams.get('start')
+  const endParam = searchParams.get('end')
+  const days = parseInt(searchParams.get('days') ?? '30', 10)
+
+  const since = startParam ?? new Date(Date.now() - days * 86_400_000).toISOString()
+  const until = endParam ? new Date(endParam + 'T23:59:59Z').toISOString() : null
 
   const supabase = createServerSupabaseClient()
-  const since = new Date(Date.now() - days * 86_400_000).toISOString()
 
   let query = supabase
     .from('v_messages_per_day')
@@ -15,12 +19,12 @@ export async function GET(req: Request) {
     .gte('day', since)
     .order('day', { ascending: true })
 
+  if (until) query = query.lte('day', until)
   if (locationId) query = query.eq('location_id', locationId)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Agrega por dia quando não há filtro de location
   if (!locationId) {
     const byDay: Record<string, { day: string; total_messages: number; inbound_count: number; outbound_count: number }> = {}
     for (const row of data ?? []) {
