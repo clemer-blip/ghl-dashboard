@@ -20,7 +20,8 @@ import type {
 import { formatDuration } from '@/lib/formatters'
 
 const LOCATION_LABELS: Record<string, string> = {
-  // Preenchido dinamicamente — você pode nomear as subcontas aqui
+  'NpYMLlXhYhsazq0i03ZV': 'São Paulo',
+  'uFiluYqG2MhvdLi1qRNj': 'Goiânia',
 }
 
 function locationLabel(id: string) {
