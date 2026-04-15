@@ -9,12 +9,17 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 from meta_client import MetaRateLimitError, ACCOUNT_LOCATION_MAP, META_BASE
 
-# Campos de insight no nível de ad — inclui métricas de vídeo
-CREATIVE_INSIGHT_FIELDS = (
+# Campos base (sempre disponíveis)
+FIELDS_BASE = (
     "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,"
-    "spend,impressions,reach,inline_link_clicks,"
-    "video_3_sec_watched_actions,video_p75_watched_actions"
+    "spend,impressions,reach,inline_link_clicks"
 )
+
+# Campos extras de vídeo (só disponíveis em campanhas de vídeo)
+FIELDS_VIDEO = "video_3_sec_watched_actions,video_p75_watched_actions"
+
+CREATIVE_INSIGHT_FIELDS        = f"{FIELDS_BASE},{FIELDS_VIDEO}"
+CREATIVE_INSIGHT_FIELDS_NOVIDEO = FIELDS_BASE
 
 
 def _sum_actions(action_list: list | None) -> int:
@@ -42,18 +47,11 @@ class MetaCreativeClient:
         resp.raise_for_status()
         return resp.json()
 
-    def get_ad_insights(self, account_id: str, since: date, until: date) -> list[dict]:
-        """Retorna insights diários no nível de ad para o período."""
+    def _paginate(self, path: str, params: dict) -> list[dict]:
+        """Pagina todos os resultados de um endpoint."""
         rows = []
-        params = {
-            "fields": CREATIVE_INSIGHT_FIELDS,
-            "level": "ad",
-            "time_increment": "1",
-            "time_range": f'{{"since":"{since}","until":"{until}"}}',
-            "limit": 500,
-        }
         while True:
-            data = self._get(f"/{account_id}/insights", params)
+            data = self._get(path, params)
             rows.extend(data.get("data", []))
             paging = data.get("paging", {})
             if not paging.get("next"):
@@ -64,6 +62,32 @@ class MetaCreativeClient:
             else:
                 break
         return rows
+
+    def get_ad_insights(self, account_id: str, since: date, until: date) -> list[dict]:
+        """Retorna insights diários no nível de ad.
+        Tenta primeiro com métricas de vídeo; se a conta não suportar (400),
+        retorna sem os campos de vídeo (campos zerados)."""
+        base_params = {
+            "level": "ad",
+            "time_increment": "1",
+            "time_range": f'{{"since":"{since}","until":"{until}"}}',
+            "limit": 500,
+        }
+        # Tentativa com campos de vídeo
+        try:
+            rows = self._paginate(
+                f"/{account_id}/insights",
+                {**base_params, "fields": CREATIVE_INSIGHT_FIELDS},
+            )
+            return rows
+        except Exception as e:
+            if "400" in str(e):
+                print(f"  [INFO] campos de vídeo não disponíveis para {account_id}, usando campos base.")
+                return self._paginate(
+                    f"/{account_id}/insights",
+                    {**base_params, "fields": CREATIVE_INSIGHT_FIELDS_NOVIDEO},
+                )
+            raise
 
     def get_ad_thumbnail(self, ad_id: str) -> str | None:
         """Busca a URL da thumbnail do criativo de um ad."""
