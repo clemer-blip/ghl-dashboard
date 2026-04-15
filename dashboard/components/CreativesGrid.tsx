@@ -69,11 +69,16 @@ function MetricBadge({
   colorFn: (v: number) => string
   suffix?: string
 }) {
+  const unavailable = value === 0 && (label === 'Hook Rate' || label === 'View 75%')
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className={`text-lg font-bold tabular-nums leading-none ${colorFn(value)}`}>
-        {value.toFixed(1)}{suffix}
-      </span>
+      {unavailable ? (
+        <span className="text-lg font-bold tabular-nums leading-none text-gray-300">—</span>
+      ) : (
+        <span className={`text-lg font-bold tabular-nums leading-none ${colorFn(value)}`}>
+          {value.toFixed(1)}{suffix}
+        </span>
+      )}
       <span className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</span>
     </div>
   )
@@ -268,8 +273,14 @@ export default function CreativesGrid({ data }: { data: CreativeRow[] }) {
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs text-gray-400 mb-1">Melhor Hook Rate</p>
-          <p className="text-xl font-bold text-emerald-600">{bestHookRate.hook_rate.toFixed(1)}%</p>
-          <p className="text-[10px] text-gray-400 mt-0.5 truncate">{bestHookRate.ad_name}</p>
+          {bestHookRate.hook_rate > 0 ? (
+            <>
+              <p className="text-xl font-bold text-emerald-600">{bestHookRate.hook_rate.toFixed(1)}%</p>
+              <p className="text-[10px] text-gray-400 mt-0.5 truncate">{bestHookRate.ad_name}</p>
+            </>
+          ) : (
+            <p className="text-xl font-bold text-gray-300">—</p>
+          )}
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs text-gray-400 mb-1">Melhor CTR</p>
