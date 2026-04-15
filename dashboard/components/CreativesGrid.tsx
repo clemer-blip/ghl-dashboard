@@ -57,23 +57,39 @@ function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="relative bg-transparent"
+        className="relative bg-transparent flex flex-col items-center gap-3"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute -top-10 right-0 z-10 bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/30 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Barra de ações */}
+        <div className="flex items-center gap-2 w-full justify-between px-1">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-white text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors shadow"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M15.536 8.464a5 5 0 010 7.072M12 18.364A9 9 0 1112 5.636M12 12v.01" />
+            </svg>
+            Abrir com som
+          </a>
+          <button
+            onClick={onClose}
+            className="bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
         <iframe
           src={url}
           width="476"
           height="847"
           scrolling="yes"
-          style={{ border: 'none', borderRadius: '12px', maxHeight: '85vh', maxWidth: '95vw' }}
+          style={{ border: 'none', borderRadius: '12px', maxHeight: '80vh', maxWidth: '95vw' }}
           allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
           title="Preview do criativo"
         />
