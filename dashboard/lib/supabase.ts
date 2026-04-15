@@ -101,3 +101,29 @@ export type LatestConversationRow = {
   last_message_body: string | null
   first_response_seconds: number | null
 }
+
+export type MetaAdCreativeRow = {
+  ad_id: string
+  ad_name: string | null
+  account_id: string
+  campaign_id: string | null
+  campaign_name: string | null
+  adset_id: string | null
+  adset_name: string | null
+  thumbnail_url: string | null
+  updated_at: string
+}
+
+export type MetaAdInsightRow = {
+  id: string
+  account_id: string
+  ad_id: string
+  location_id: string
+  date: string
+  spend: number
+  impressions: number
+  reach: number
+  inline_link_clicks: number
+  video_3sec_watched: number
+  video_p75_watched: number
+}

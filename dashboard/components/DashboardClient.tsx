@@ -123,6 +123,16 @@ export default function DashboardClient() {
               </svg>
             </div>
             <h1 className="text-lg font-bold text-gray-900">Casa Renata — Atendimento</h1>
+            <a
+              href="/criativos"
+              className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1 rounded-lg bg-violet-50 text-violet-700 text-xs font-medium hover:bg-violet-100 transition-colors border border-violet-200"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Criativos
+            </a>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
