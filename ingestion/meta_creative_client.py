@@ -10,7 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from meta_client import MetaRateLimitError, ACCOUNT_LOCATION_MAP, META_BASE
 
 # Métricas base — ad_id/ad_name/adset/campaign são dimensões automáticas com level=ad
-FIELDS_BASE = "spend,impressions,reach,inline_link_clicks,ad_name,adset_name,campaign_name"
+FIELDS_BASE = "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,reach,inline_link_clicks"
 
 # Campos extras de vídeo (só disponíveis em campanhas com criativos de vídeo)
 FIELDS_VIDEO = "video_3_sec_watched_actions,video_p75_watched_actions"
