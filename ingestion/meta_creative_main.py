@@ -43,6 +43,10 @@ def main():
             print("  → nenhuma linha, pulando.")
             continue
 
+        # Debug: mostrar chaves da primeira linha
+        print(f"  → chaves da primeira linha: {list(rows[0].keys())}")
+        print(f"  → exemplo: {rows[0]}")
+
         # Upsert métricas diárias por ad
         insight_records = [client.parse_insight_row(r, account_id) for r in rows]
         supabase.table("meta_ad_insights").upsert(

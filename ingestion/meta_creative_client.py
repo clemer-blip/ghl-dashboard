@@ -101,8 +101,8 @@ class MetaCreativeClient:
 
     def parse_insight_row(self, row: dict, account_id: str) -> dict:
         """Converte um row de insight em dict pronto para o Supabase."""
-        ad_id    = row["ad_id"]
-        row_date = row["date_start"]
+        ad_id    = row.get("ad_id") or row.get("id", "unknown")
+        row_date = row.get("date_start", row.get("date", ""))
         location_id = ACCOUNT_LOCATION_MAP.get(account_id, account_id)
 
         return {
