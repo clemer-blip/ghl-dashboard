@@ -9,6 +9,7 @@ export type CreativeRow = {
   adset_name: string | null
   thumbnail_url: string | null
   video_url: string | null
+  video_id: string | null
   location_id: string
   spend: number
   impressions: number
@@ -50,7 +51,8 @@ function brl(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+function PreviewModal({ url, videoId, onClose }: { url: string; videoId: string | null; onClose: () => void }) {
+  const watchUrl = videoId ? `https://www.facebook.com/watch/?v=${videoId}` : null
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
@@ -62,18 +64,20 @@ function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
       >
         {/* Barra de ações */}
         <div className="flex items-center gap-2 w-full justify-between px-1">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-white text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors shadow"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M15.536 8.464a5 5 0 010 7.072M12 18.364A9 9 0 1112 5.636M12 12v.01" />
-            </svg>
-            Abrir com som
-          </a>
+          {watchUrl && (
+            <a
+              href={watchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-white text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors shadow"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15.536 8.464a5 5 0 010 7.072M12 18.364A9 9 0 1112 5.636M12 12v.01" />
+              </svg>
+              Abrir com som
+            </a>
+          )}
           <button
             onClick={onClose}
             className="bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/30 transition-colors"
@@ -109,7 +113,7 @@ function CreativeCard({ row }: { row: CreativeRow }) {
   return (
     <>
       {showPreview && row.video_url && (
-        <PreviewModal url={row.video_url} onClose={() => setShowPreview(false)} />
+        <PreviewModal url={row.video_url} videoId={row.video_id} onClose={() => setShowPreview(false)} />
       )}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">

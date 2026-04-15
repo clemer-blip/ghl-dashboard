@@ -86,26 +86,29 @@ class MetaCreativeClient:
                 )
             raise
 
-    def get_ad_creative_urls(self, ad_id: str) -> tuple[str | None, str | None]:
-        """Retorna (thumbnail_url, preview_url) do criativo de um ad.
+    def get_ad_creative_urls(self, ad_id: str) -> tuple[str | None, str | None, str | None]:
+        """Retorna (thumbnail_url, preview_url, video_id).
 
-        thumbnail_url — imagem de capa do criativo.
-        preview_url   — src do iframe do Ad Preview API (funciona com ads_read).
+        thumbnail_url — imagem de capa.
+        preview_url   — src do iframe do Ad Preview API (sem áudio).
+        video_id      — ID do vídeo no Facebook (para abrir com áudio).
         """
         import re
 
         thumbnail_url = None
         preview_url   = None
+        video_id      = None
 
-        # Thumbnail / imagem
+        # Thumbnail + video_id
         try:
-            data     = self._get(f"/{ad_id}", {"fields": "creative{thumbnail_url,image_url}"})
+            data     = self._get(f"/{ad_id}", {"fields": "creative{thumbnail_url,image_url,video_id}"})
             creative = data.get("creative", {})
             thumbnail_url = creative.get("thumbnail_url") or creative.get("image_url")
+            video_id      = creative.get("video_id")
         except Exception as e:
             print(f"  [WARN] criativo não encontrado para ad {ad_id}: {e}")
 
-        # Preview via Ad Preview API (não exige permissão extra)
+        # Preview iframe via Ad Preview API
         try:
             pdata = self._get(f"/{ad_id}/previews", {"ad_format": "INSTAGRAM_STANDARD"})
             items = pdata.get("data", [])
@@ -117,7 +120,7 @@ class MetaCreativeClient:
         except Exception as e:
             print(f"  [WARN] preview não disponível para ad {ad_id}: {e}")
 
-        return thumbnail_url, preview_url
+        return thumbnail_url, preview_url, video_id
 
     def parse_insight_row(self, row: dict, account_id: str) -> dict:
         """Converte um row de insight em dict pronto para o Supabase."""
@@ -145,6 +148,7 @@ class MetaCreativeClient:
         account_id: str,
         thumbnail_url: str | None,
         video_url: str | None,
+        video_id: str | None = None,
     ) -> dict:
         """Converte um row de insight em dict de criativo (catálogo)."""
         return {
@@ -157,4 +161,5 @@ class MetaCreativeClient:
             "adset_name":    row.get("adset_name"),
             "thumbnail_url": thumbnail_url,
             "video_url":     video_url,
+            "video_id":      video_id,
         }

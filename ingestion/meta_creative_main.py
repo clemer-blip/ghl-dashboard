@@ -65,9 +65,9 @@ def main():
         print(f"  → buscando thumbnails e vídeos de {len(seen)} ads únicos…")
         creative_records = []
         for ad_id, row in seen.items():
-            thumb, video = client.get_ad_creative_urls(ad_id)
+            thumb, video, vid_id = client.get_ad_creative_urls(ad_id)
             creative_records.append(
-                client.parse_creative_row(row, account_id, thumb, video)
+                client.parse_creative_row(row, account_id, thumb, video, vid_id)
             )
 
         supabase.table("meta_ad_creatives").upsert(
