@@ -8,6 +8,7 @@ export type CreativeRow = {
   campaign_name: string | null
   adset_name: string | null
   thumbnail_url: string | null
+  video_url: string | null
   location_id: string
   spend: number
   impressions: number
@@ -78,14 +79,53 @@ function MetricBadge({
   )
 }
 
+function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm bg-black rounded-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/80 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <video
+          src={url}
+          controls
+          autoPlay
+          className="w-full"
+          style={{ maxHeight: '80vh' }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function CreativeCard({ row }: { row: CreativeRow }) {
+  const [showVideo, setShowVideo] = useState(false)
   const locLabel = LOCATION_LABELS[row.location_id] ?? row.location_id.slice(0, 4)
   const locColor = LOC_COLORS[row.location_id] ?? '#6366f1'
+  const hasVideo = !!row.video_url
 
   return (
+    <>
+      {showVideo && row.video_url && (
+        <VideoModal url={row.video_url} onClose={() => setShowVideo(false)} />
+      )}
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
       {/* Thumbnail */}
-      <div className="relative bg-gray-100 aspect-video flex items-center justify-center overflow-hidden">
+      <div
+        className={`relative bg-gray-100 aspect-video flex items-center justify-center overflow-hidden ${hasVideo ? 'cursor-pointer group' : ''}`}
+        onClick={() => hasVideo && setShowVideo(true)}
+      >
         {row.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -102,6 +142,18 @@ function CreativeCard({ row }: { row: CreativeRow }) {
             <span className="text-xs text-gray-400">sem prévia</span>
           </div>
         )}
+
+        {/* Botão de play — só aparece se tiver vídeo */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 text-gray-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        )}
+
         {/* Badge de unidade */}
         <span
           className="absolute top-2 right-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -109,6 +161,16 @@ function CreativeCard({ row }: { row: CreativeRow }) {
         >
           {locLabel}
         </span>
+
+        {/* Badge de vídeo */}
+        {hasVideo && (
+          <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            vídeo
+          </span>
+        )}
       </div>
 
       {/* Info */}
@@ -157,6 +219,7 @@ function CreativeCard({ row }: { row: CreativeRow }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

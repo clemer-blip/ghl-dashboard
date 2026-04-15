@@ -86,18 +86,24 @@ class MetaCreativeClient:
                 )
             raise
 
-    def get_ad_thumbnail(self, ad_id: str) -> str | None:
-        """Busca a URL da thumbnail do criativo de um ad."""
+    def get_ad_creative_urls(self, ad_id: str) -> tuple[str | None, str | None]:
+        """Retorna (thumbnail_url, video_url) do criativo de um ad."""
+        thumbnail_url = None
+        video_url     = None
         try:
-            data = self._get(
-                f"/{ad_id}",
-                {"fields": "creative{thumbnail_url,image_url}"},
-            )
+            data     = self._get(f"/{ad_id}", {"fields": "creative{thumbnail_url,image_url,video_id}"})
             creative = data.get("creative", {})
-            return creative.get("thumbnail_url") or creative.get("image_url")
+            thumbnail_url = creative.get("thumbnail_url") or creative.get("image_url")
+            video_id      = creative.get("video_id")
+            if video_id:
+                try:
+                    vdata     = self._get(f"/{video_id}", {"fields": "source"})
+                    video_url = vdata.get("source")
+                except Exception as ve:
+                    print(f"  [WARN] video source não disponível para video {video_id}: {ve}")
         except Exception as e:
-            print(f"  [WARN] thumbnail não encontrado para ad {ad_id}: {e}")
-            return None
+            print(f"  [WARN] criativo não encontrado para ad {ad_id}: {e}")
+        return thumbnail_url, video_url
 
     def parse_insight_row(self, row: dict, account_id: str) -> dict:
         """Converte um row de insight em dict pronto para o Supabase."""
@@ -120,16 +126,21 @@ class MetaCreativeClient:
         }
 
     def parse_creative_row(
-        self, row: dict, account_id: str, thumbnail_url: str | None
+        self,
+        row: dict,
+        account_id: str,
+        thumbnail_url: str | None,
+        video_url: str | None,
     ) -> dict:
         """Converte um row de insight em dict de criativo (catálogo)."""
         return {
-            "ad_id":        row["ad_id"],
-            "ad_name":      row.get("ad_name"),
-            "account_id":   account_id,
-            "campaign_id":  row.get("campaign_id"),
+            "ad_id":         row.get("ad_id") or row.get("id", "unknown"),
+            "ad_name":       row.get("ad_name"),
+            "account_id":    account_id,
+            "campaign_id":   row.get("campaign_id"),
             "campaign_name": row.get("campaign_name"),
-            "adset_id":     row.get("adset_id"),
-            "adset_name":   row.get("adset_name"),
+            "adset_id":      row.get("adset_id"),
+            "adset_name":    row.get("adset_name"),
             "thumbnail_url": thumbnail_url,
+            "video_url":     video_url,
         }

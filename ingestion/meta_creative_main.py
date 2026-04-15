@@ -62,12 +62,12 @@ def main():
             if ad_id not in seen:
                 seen[ad_id] = r
 
-        print(f"  → buscando thumbnails de {len(seen)} ads únicos…")
+        print(f"  → buscando thumbnails e vídeos de {len(seen)} ads únicos…")
         creative_records = []
         for ad_id, row in seen.items():
-            thumb = client.get_ad_thumbnail(ad_id)
+            thumb, video = client.get_ad_creative_urls(ad_id)
             creative_records.append(
-                client.parse_creative_row(row, account_id, thumb)
+                client.parse_creative_row(row, account_id, thumb, video)
             )
 
         supabase.table("meta_ad_creatives").upsert(

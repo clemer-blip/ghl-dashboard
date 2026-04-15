@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS meta_ad_creatives (
   adset_id      TEXT,
   adset_name    TEXT,
   thumbnail_url TEXT,
+  video_url     TEXT,
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

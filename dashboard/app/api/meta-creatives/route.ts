@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const adIds = [...new Set(insightRows.map((r) => r.ad_id))]
   const { data: creatives, error: creativeError } = await supabase
     .from('meta_ad_creatives')
-    .select('ad_id, ad_name, campaign_name, adset_name, thumbnail_url')
+    .select('ad_id, ad_name, campaign_name, adset_name, thumbnail_url, video_url')
     .in('ad_id', adIds)
 
   if (creativeError) return NextResponse.json({ error: creativeError.message }, { status: 500 })
@@ -86,10 +86,11 @@ export async function GET(req: Request) {
 
     return {
       ad_id:          agg.ad_id,
-      ad_name:        creative?.ad_name    ?? agg.ad_id,
-      campaign_name:  creative?.campaign_name ?? null,
-      adset_name:     creative?.adset_name ?? null,
-      thumbnail_url:  creative?.thumbnail_url ?? null,
+      ad_name:        creative?.ad_name       ?? agg.ad_id,
+      campaign_name:  creative?.campaign_name  ?? null,
+      adset_name:     creative?.adset_name     ?? null,
+      thumbnail_url:  creative?.thumbnail_url  ?? null,
+      video_url:      creative?.video_url      ?? null,
       location_id:    agg.location_id,
       spend:          agg.spend,
       impressions:    agg.impressions,
