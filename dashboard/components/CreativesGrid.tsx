@@ -79,30 +79,32 @@ function MetricBadge({
   )
 }
 
-function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-sm bg-black rounded-2xl overflow-hidden"
+        className="relative bg-transparent"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-black/80 transition-colors"
+          className="absolute -top-10 right-0 z-10 bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/30 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <video
+        <iframe
           src={url}
-          controls
-          autoPlay
-          className="w-full"
-          style={{ maxHeight: '80vh' }}
+          width="476"
+          height="847"
+          scrolling="yes"
+          style={{ border: 'none', borderRadius: '12px', maxHeight: '85vh', maxWidth: '95vw' }}
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          title="Preview do criativo"
         />
       </div>
     </div>
@@ -118,7 +120,7 @@ function CreativeCard({ row }: { row: CreativeRow }) {
   return (
     <>
       {showVideo && row.video_url && (
-        <VideoModal url={row.video_url} onClose={() => setShowVideo(false)} />
+        <PreviewModal url={row.video_url} onClose={() => setShowVideo(false)} />
       )}
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
       {/* Thumbnail */}

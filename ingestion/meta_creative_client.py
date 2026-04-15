@@ -87,23 +87,37 @@ class MetaCreativeClient:
             raise
 
     def get_ad_creative_urls(self, ad_id: str) -> tuple[str | None, str | None]:
-        """Retorna (thumbnail_url, video_url) do criativo de um ad."""
+        """Retorna (thumbnail_url, preview_url) do criativo de um ad.
+
+        thumbnail_url — imagem de capa do criativo.
+        preview_url   — src do iframe do Ad Preview API (funciona com ads_read).
+        """
+        import re
+
         thumbnail_url = None
-        video_url     = None
+        preview_url   = None
+
+        # Thumbnail / imagem
         try:
-            data     = self._get(f"/{ad_id}", {"fields": "creative{thumbnail_url,image_url,video_id}"})
+            data     = self._get(f"/{ad_id}", {"fields": "creative{thumbnail_url,image_url}"})
             creative = data.get("creative", {})
             thumbnail_url = creative.get("thumbnail_url") or creative.get("image_url")
-            video_id      = creative.get("video_id")
-            if video_id:
-                try:
-                    vdata     = self._get(f"/{video_id}", {"fields": "source"})
-                    video_url = vdata.get("source")
-                except Exception as ve:
-                    print(f"  [WARN] video source não disponível para video {video_id}: {ve}")
         except Exception as e:
             print(f"  [WARN] criativo não encontrado para ad {ad_id}: {e}")
-        return thumbnail_url, video_url
+
+        # Preview via Ad Preview API (não exige permissão extra)
+        try:
+            pdata = self._get(f"/{ad_id}/previews", {"ad_format": "INSTAGRAM_STANDARD"})
+            items = pdata.get("data", [])
+            if items:
+                body  = items[0].get("body", "")
+                match = re.search(r'src="([^"]+)"', body)
+                if match:
+                    preview_url = match.group(1).replace("&amp;", "&")
+        except Exception as e:
+            print(f"  [WARN] preview não disponível para ad {ad_id}: {e}")
+
+        return thumbnail_url, preview_url
 
     def parse_insight_row(self, row: dict, account_id: str) -> dict:
         """Converte um row de insight em dict pronto para o Supabase."""
