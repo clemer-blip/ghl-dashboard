@@ -125,7 +125,7 @@ export default function DashboardClient() {
             <h1 className="text-lg font-bold text-gray-900">Casa Renata — Atendimento</h1>
             <a
               href="/criativos"
-              className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1 rounded-lg bg-violet-50 text-violet-700 text-xs font-medium hover:bg-violet-100 transition-colors border border-violet-200"
+              className="hidden sm:flex items-center gap-1.5 ml-3 px-3.5 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shadow-sm"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
