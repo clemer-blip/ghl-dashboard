@@ -10,8 +10,8 @@ import type { CreativeRow } from '@/components/CreativesGrid'
 const GO_LOCATION = 'uFiluYqG2MhvdLi1qRNj'
 
 function fmt(date: string) {
-  const d = new Date(date + 'T12:00:00')
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const [year, month, day] = date.slice(0, 10).split('-')
+  return `${day}/${month}`
 }
 
 function ctrColor(v: number) {
@@ -312,17 +312,25 @@ export default function VolumePage() {
               </>
             )}
 
-            {/* Criativos — sem dados financeiros */}
-            {creatives.length > 0 && (
-              <div>
-                <h2 className="text-sm font-semibold text-gray-700 mb-4">Criativos</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {creatives.map(row => (
-                    <CreativeCardPublic key={row.ad_id} row={row} />
-                  ))}
+            {/* Criativos de conversa — sem dados financeiros */}
+            {(() => {
+              const convCreatives = creatives.filter(c =>
+                c.campaign_name?.toUpperCase().includes('WPP') ||
+                c.campaign_name?.toUpperCase().includes('CONVERSA') ||
+                c.campaign_name?.toUpperCase().includes('ENGAJAMENTO')
+              )
+              if (!convCreatives.length) return null
+              return (
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-700 mb-4">Criativos</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {convCreatives.map(row => (
+                      <CreativeCardPublic key={row.ad_id} row={row} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
           </>
         )}
       </main>
